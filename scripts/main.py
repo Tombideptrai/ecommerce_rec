@@ -63,7 +63,6 @@ for k in K:
 kmeans = KMeans(n_clusters=16, random_state=42)
 df['Cluster'] = kmeans.fit_predict(X_cluster)
 
-# For each cluster, find the most purchased products
 cluster_recommendations = {}
 for cluster in df['Cluster'].unique():
     cluster_users = df[df['Cluster'] == cluster]
