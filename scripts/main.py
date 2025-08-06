@@ -10,10 +10,9 @@ import joblib
 # --- Load and preprocess data ---
 df = pd.read_csv('data/user_personalized_features.csv')
 
-# Drop unnecessary columns
-for col in ['Unnamed: 0', 'User_ID']:
-    if col in df.columns:
-        df.drop(col, axis=1, inplace=True)
+# Only drop 'Unnamed: 0', keep 'User_ID'
+if 'Unnamed: 0' in df.columns:
+    df.drop('Unnamed: 0', axis=1, inplace=True)
 
 # Encode categorical columns
 cat_cols = df.select_dtypes(include=['object', 'bool']).columns.tolist()
@@ -23,8 +22,12 @@ for col in cat_cols:
     df[col] = le.fit_transform(df[col])
     label_encoders[col] = le
 
+le = LabelEncoder()
+df['Product_Category_Preference'] = le.fit_transform(df['Product_Category_Preference'])
+label_encoders['Product_Category_Preference'] = le
+
 # Scale numeric columns
-num_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
+num_cols = [col for col in df.select_dtypes(include=['int64', 'float64']).columns if col != 'Product_Category_Preference']
 scaler = StandardScaler()
 df[num_cols] = scaler.fit_transform(df[num_cols])
 
@@ -40,12 +43,7 @@ cluster_top_products = {}
 for cluster in df['Cluster'].unique():
     cluster_users = df[df['Cluster'] == cluster]
     top_products = cluster_users['Product_Category_Preference'].value_counts().head(3)
-    cluster_top_products[cluster] = [
-        label_encoders['Product_Category_Preference'].inverse_transform([cat])[0]
-        if hasattr(label_encoders['Product_Category_Preference'], 'inverse_transform')
-        else cat
-        for cat in top_products.index
-    ]
+    cluster_top_products[cluster] = le.inverse_transform(top_products.index)
 
 # --- Collaborative Filtering for existing users ---
 # Use Purchase_Frequency as rating
